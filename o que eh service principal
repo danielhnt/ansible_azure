@@ -1,0 +1,207 @@
+Uma conta de serviço usada para autenticar aplicaçoes e serviços com o Microsoft Azure e consiste nos 4 componentes abaixo:
+
+Subscrition ID
+
+Client ID
+
+Secret =  password
+
+Tenant ID 
+
+Todos esses 4 componentes sao usados para se autenticar com a cloud Azure.
+###########################################################################################
+Primeiro devemos criar o Service Principal
+
+# Create the service Principal
+
+
+# AZ = Azure | AD = Active Directory | SP = Service Principal | Create-for-rbac = role based access control
+az ad sp create-for-rbac --name awesomeAnsibleSP
+
+# Sample Output from Service Principal Creation
+
+{
+    "appID: "dawdawds-dawdadw-dawdawd-dawdawd",
+    "displayName": "awesomeAnsibleSP",
+    "password": "awduhawudhaw~haushuhdawd~haudhawu-dq1d1d",
+    "tenant": "213214-41545-5454-45454-545454awdas"
+}
+
+Devemos guardar essa senha gerada de forma automatica pois ela não poderá ser recuperada no futuro.
+#######################################################################################################################
+
+Segundo passo devemos associar o Service Principal a uma role 
+
+# Assign the Service Principal Contributor Role
+az role assigment create --assignee dawdawds-dawdadw-dawdawd-dawdawd --role Contributor
+
+
+######################################################################################################################
+Terceiro passo iremos verificar as informações que criamos
+
+az account show --query '{tenantId:tenantID,subscriptionid:id}'
+
+# Sample output from Account Information Query
+
+{
+    "subscriptionid": "1198151-881-81-8-1--784-7"
+    "tenantID": "8484-8484-8-4848484-84848484-8484-8"
+}
+
+# Retrieve the Application ID
+
+az ad sp list --display-name awesomeAnsibleSP --query '{clientId:[0].appId}'
+
+# Sample output application ID query
+
+{
+    "clientId": "1d5aw1d5aw1-1515151-51-51-5-15"
+}
+
+########################################################################################################################
+Quarto passo seria criar um diretorio e um arquivo contendo as credenciais do Azure
+
+# Create Path and Credentials File
+mkdir ~/.azure
+vim  ~/.azure/credentials
+
+# Adicionar os dados ao arquivo de credenciais
+
+[default]
+subscription_id=
+client_id=
+secret=
+tenant=
+
+# Salvar e sair do arquivo.
+
+# uma Melhor maneira de administrar as credenciais é utilizando variaveis de ambiente, sendo assim precisamos criar as variaveis
+
+export AZURE_SUBSCRIPTION_ID=HAUIWHDUAWHDA
+export AZURE_CLIENT_ID=HAUIWHDUAWHDA
+export AZURE_SECRET=HAUIWHDUAWHDA
+export AZURE_TENANT=HAUIWHDUAWHDA
+
+#############################################################################################################################
+
+### Deploying Azure Virtual Machines
+Para realizar o deploy de uma infraestrutura na cloud Azure, devemos lembrar de alguns recursos necessarios
+
+Precisamos entender o resource group
+Precisamos de uma Virtual Network
+Precisamos de uma subnet
+Agora podemos criar uma maquina virtual
+Podemos adicionar um ip publico
+Podemos adicionar um network security group e uma interface de rede
+
+# Exemplo de criação de vm
+
+vim vm.yml
+---
+- name: Create Azure VM
+  hosts: localhost
+  connection: local
+
+  collections:
+    - azure.azcollection
+
+  vars_prompt:
+    - name: password
+      prompt: "Enter local administrator password"
+
+  vars:
+    resource_group_name: awesomerg
+    vm_name: awesomevm01
+    vnet_name: awesomevnet
+    subnet_name: awesomesubnet1
+    public_ip_name: awesomepublicip01
+    security_group_name: awesomesecgroup1
+    network_interface_name: awesomenic01
+
+
+  tasks:
+    - name: Creating resource group
+      azure_rm_resourcegroup:
+        name: "{{ resource_group_name }}"
+        location: eastus
+
+    - name: Create virtual network
+      azure_rm_virtualnetwork:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ vnet_name }}"
+        address_prefixes: "10.10.0.0/16"
+
+    - name: Add subnet
+      azure_rm_subnet:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ subnet_name }}"
+        address_prefix: "10.10.0.0/24"
+        virtual_network: "{{ vnet_name }}"
+
+    - name: Create public IP
+      azure_rm_securitygroup:
+        resource_group:"{{ resource_group_name }}"
+        allocation_method: Static
+        name: "{{ public_ip_name }}"
+
+    - name: Create security group that allows RDP
+      azure_rm_securitygroup:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ security_group_name }}"
+        rules:
+          - name: 'allow_rdp'
+            protocol: Tcp
+            destination_port_range 3389
+            access: Allow
+            priority: 1001
+            direction: Inbound
+        - name: 'allow_powershell_remoting'
+          protocol: Tcp
+          destination_port_range:
+            - 5985
+            - 5986
+          access: Allow
+          priority: 1003
+          direction: Inbound
+
+
+    - name: Create NIC
+      azure_rm_networkinginterfaces:
+        resource_group: "{{ resource_group_name }}"
+        name: "{{ network_interface_name }}"
+        virtual_network: "{{ vnet_name }}"
+        vm_size: Standard_DS1_v2
+        manage_disk-type: Standard_LRS
+        admin_username: awesomeadmin
+        admin_password: "{{ password }}"
+        network_interfaces: "{{ network_interfaces_name }}" 
+        os_type: Windows
+        image:
+            offer: WindowsServer
+            publisher: MicrosoftWindowsServer
+            sku: 2019-Datacenter
+            version: latest
+    no_log: true
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
