@@ -1,0 +1,18 @@
+---
+- name: Consultar versão do sistema operacional e adicionar tag
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: Coletar fatos sobre o sistema
+      setup:
+      
+    - name: Adicionar tag com a versão do sistema operacional
+      set_fact:
+        ansible_facts:
+          tags:
+            OS: "{{ ansible_distribution }} {{ ansible_distribution_version }} {{ ansible_distribution_release }}"
+
+    - name: Exibir a tag OS
+      debug:
+        var: ansible_facts.tags.OS
